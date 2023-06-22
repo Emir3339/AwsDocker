@@ -1,0 +1,37 @@
+name: Ci_Cd_Test1
+env:
+  EB_PACKAGE_S3_BUCKET_NAME : "cf-templates-p674dmzm3lbr-ap-northeast-1"
+  EB_APPLICATION_NAME       : "AWS_S3"
+  AWS_REGION_NAME           : "ap-northeast-1"
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  push: 
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  cfn-deployment:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git clone
+        uses: actions/checkout@v1
+
+      - name: Configure my AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id    : ${{ secrets.USER_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.USER_SECRET_KEY }}
+          aws-region           : ${{ env.AWS_REGION_NAME }}
+
+      - name: Copy Deployment package to S3 bucket
+        run : aws s3 sync ./ s3://${{ env.EB_PACKAGE_S3_BUCKET_NAME }}/
+        
+      - name: Deploy to EB
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: cf-templates-p674dmzm3lbr-ap-northeast-1
+          template: aws-test.yaml
